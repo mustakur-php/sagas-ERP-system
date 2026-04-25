@@ -124,9 +124,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('carriers', CarrierController::class);
 
     Route::get('/run-seed', function () {
-        // هذا الأمر يشغل ملف DatabaseSeeder الأساسي
-        Artisan::call('db:seed --force');
-        return "تم تشغيل الـ Seed بنجاح ونسخ كافة المعلومات الأساسية!";
+        try {
+            Artisan::call('db:seed', ['--force' => true]);
+            return "Seed success: " . Artisan::output();
+        } catch (\Exception $e) {
+            return "Error: " . $e->getMessage();
+        }
     });    
 
 });
