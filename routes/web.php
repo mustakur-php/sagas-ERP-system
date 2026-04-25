@@ -123,15 +123,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('suppliers', SupplierController::class);
     Route::resource('carriers', CarrierController::class);
 
-    Route::get('/master-init', function () {
-        try {
-            // هذا الأمر سيمسح الجداول، يعيد بناءها، ويشغل السيدر بالقوة
-            Artisan::call('migrate:fresh', ['--seed' => true, '--force' => true]);
-            return "تمت إعادة بناء النظام بالكامل مع كافة البيانات الأساسية (شركات، محطات، مستخدمين).";
-        } catch (\Exception $e) {
-            return "حدث خطأ: " . $e->getMessage();
-        }
-    });
-
+    
 });
 
