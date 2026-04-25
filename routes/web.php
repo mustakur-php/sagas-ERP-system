@@ -15,7 +15,9 @@ use App\Http\Controllers\FuelOrderFinanceController;
 use App\Http\Controllers\FuelOrderTransportController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\CarrierController;
-
+use Illuminate\Support\Facades\Artisan;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 
 
@@ -120,5 +122,23 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('suppliers', SupplierController::class);
     Route::resource('carriers', CarrierController::class);
+
+    
+
+    // 1. رابط بناء الجداول (Migration)
+    Route::get('/init-db', function () {
+        Artisan::call('migrate:fresh --force'); // هذا الأمر يمسح الجداول القديمة ويبنيها من جديد
+        return "تم بناء الجداول بنجاح!";
+    });
+
+    // 2. رابط إنشاء مستخدم المدير (Admin)
+    Route::get('/init-admin', function () {
+        User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@sagas.com', // غيره للإيميل الذي تفضله
+            'password' => Hash::make('12345678'), // كلمة المرور
+        ]);
+        return "تم إنشاء مستخدم المدير بنجاح! يمكنك الدخول الآن.";
+    });
 });
 
