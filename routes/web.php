@@ -18,7 +18,8 @@ use App\Http\Controllers\CarrierController;
 use Illuminate\Support\Facades\Artisan;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 
 
 
@@ -123,6 +124,17 @@ Route::middleware('auth')->group(function () {
     Route::resource('suppliers', SupplierController::class);
     Route::resource('carriers', CarrierController::class);
 
-    
+    Route::get('/fix-password-length', function () {
+        try {
+            // تغيير طول عمود الباسورد لـ 255 حرف لكي لا يتم قصه
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('password', 255)->change();
+            });
+            return "تم توسيع العمود بنجاح! الآن يمكنك لصق الباسورد الطويل في ريلوي.";
+        } catch (\Exception $e) {
+            return "حدث خطأ: " . $e->getMessage();
+        }
+    });
+
 });
 
