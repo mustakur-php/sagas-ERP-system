@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('station_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('station_id')->nullable()->constrained('stations')->nullOnDelete();
 
             $table->decimal('amount', 12, 2); // قيمة البيع
             $table->decimal('quantity', 12, 2)->nullable(); // اللترات (اختياري)

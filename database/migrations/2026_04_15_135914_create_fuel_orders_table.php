@@ -15,10 +15,11 @@ return new class extends Migration
             $table->string('order_number')->unique();
 
             // مرتبط بالمحطة فقط (ومنها نعرف الشركة)
-            $table->foreignId('station_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('station_id')->nullable()->constrained('stations')->nullOnDelete();
 
             // من أنشأ الطلب
-            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+
 
             // حالة الطلب (بسيطة)
             $table->string('status')->default('draft');

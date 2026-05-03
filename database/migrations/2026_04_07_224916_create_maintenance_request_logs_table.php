@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('from_department_id')->nullable()->constrained('departments')->nullOnDelete();
             $table->foreignId('to_department_id')->nullable()->constrained('departments')->nullOnDelete();
 
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
 
             $table->string('action'); // created, assigned, updated, closed
 

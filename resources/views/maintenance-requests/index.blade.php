@@ -73,6 +73,7 @@
                     <th>العنوان</th>
                     <th>الأولوية</th>
                     <th>الحالة</th>
+                    <th>المرحلة</th>
                     <th>تاريخ البلاغ</th>
                     <th>الإجراء</th>
                 </tr>
@@ -87,6 +88,30 @@
                         <td>{{ $item->title }}</td>
                         <td>{{ $priorities[$item->priority] ?? $item->priority ?? '-' }}</td>
                         <td>{{ $statuses[$item->status] ?? $item->status }}</td>
+                        <td>
+                            @switch($item->current_step)
+                                @case('operations_review')
+                                    مراجعة التشغيل
+                                    @break
+                                @case('department_review')
+                                    مراجعة القسم
+                                    @break
+                                @case('technician_work')
+                                    تنفيذ المسؤول
+                                    @break
+                                @case('operations_final_review')
+                                    اعتماد التشغيل النهائي
+                                    @break
+                                @case('closed')
+                                    مغلق
+                                    @break
+                                @case('cancelled')
+                                    ملغي
+                                    @break
+                                @default
+                                    {{ $item->current_step ?? '-' }}
+                            @endswitch
+                        </td>
                         <td>{{ $item->reported_at ? \Carbon\Carbon::parse($item->reported_at)->format('Y-m-d H:i') : '-' }}</td>
                         <td class="actions">
 
@@ -114,7 +139,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9">لا توجد بلاغات</td>
+                        <td colspan="10">لا توجد بلاغات</td>
                     </tr>
                 @endforelse
             </tbody>

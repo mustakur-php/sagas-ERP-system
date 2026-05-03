@@ -9,6 +9,7 @@ class FuelOrderTransport extends Model
     protected $fillable = [
         'fuel_order_id',
         'supplier_id',
+        'supplier_total_cost',
         'carrier_id',
         'transport_cost',
         'driver_name',

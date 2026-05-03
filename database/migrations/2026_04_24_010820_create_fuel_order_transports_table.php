@@ -15,20 +15,16 @@ return new class extends Migration
             $table->id();
 
             // ربط مع الطلب
-            $table->foreignId('fuel_order_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            $table->foreignId('fuel_order_id')->constrained()->cascadeOnDelete();
 
             // المورد
-            $table->foreignId('supplier_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
 
             // الناقل
-            $table->foreignId('carrier_id')
-                ->nullable()
-                ->constrained()
-                ->nullOnDelete();
+            $table->foreignId('carrier_id')->nullable()->constrained()->nullOnDelete();
+
+            //تكلفه المورد مقابل الكمية المطلوبه 
+            $table->decimal('supplier_total_cost', 12, 2)->nullable();
 
             // تكلفة النقل
             $table->decimal('transport_cost', 12, 2)->nullable();
@@ -41,18 +37,14 @@ return new class extends Migration
             $table->timestamp('arrival_time')->nullable();
 
             // الحالة
-            $table->enum('status', ['pending', 'assigned', 'in_transit', 'arrived', 'cancelled'])
-                ->default('pending');
+            $table->enum('status', ['pending', 'assigned', 'in_transit', 'arrived', 'cancelled'])->default('pending');
             // pending / assigned / in_transit / arrived / cancelled
 
             // ملاحظات
             $table->text('notes')->nullable();
 
             // من عيّن النقل
-            $table->foreignId('assigned_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+            $table->foreignId('assigned_by')->nullable()->constrained('users')->nullOnDelete();
 
             $table->timestamp('assigned_at')->nullable();
 

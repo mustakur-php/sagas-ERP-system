@@ -272,7 +272,7 @@ class FuelOrderController extends Controller
     public function rejectItem(\Illuminate\Http\Request $request, $id)
     {
         $request->validate([
-            'reason' => ['required', 'string', 'max:1000'],
+            'rejection_reason' => ['required', 'string', 'max:1000'],
         ]);
 
         $item = \App\Models\FuelOrderItem::with('fuelOrder')->findOrFail($id);
@@ -284,7 +284,7 @@ class FuelOrderController extends Controller
         $item->update([
             'status' => 'rejected',
             'approved_quantity' => 0,
-            'rejection_reason' => $request->reason,
+            'rejection_reason' => $request->rejection_reason,
         ]);
 
         $item->fuelOrder->logs()->create([
@@ -292,7 +292,7 @@ class FuelOrderController extends Controller
             'action' => 'item_rejected',
             'from_step' => $item->fuelOrder->current_step,
             'to_step' => $item->fuelOrder->current_step,
-            'notes' => 'تم رفض أحد بنود الطلب: ' . $request->reason,
+            'notes' => 'تم رفض أحد بنود الطلب: ' . $request->rejection_reason,
         ]);
 
         $this->updateOrderStatus($item->fuel_order_id);

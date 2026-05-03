@@ -11,24 +11,19 @@ class FuelOrderFinanceController extends Controller
 {
     public function approveFinance(Request $request, $id)
     {
-        $request->validate([
-            'amount' => ['required', 'numeric', 'min:0'],
-        ]);
-
         $order = FuelOrder::with('finance')->findOrFail($id);
 
         if ($order->current_step !== 'finance_review') {
             return back()->with('error', 'الطلب ليس في مرحلة مراجعة توفر المبلغ');
         }
 
-        DB::transaction(function () use ($request, $order) {
+        DB::transaction(function () use ($order) {
             $oldStep = $order->current_step;
 
-            $finance = $order->finance()->updateOrCreate(
+            $order->finance()->updateOrCreate(
                 ['fuel_order_id' => $order->id],
                 [
                     'status' => 'approved',
-                    'amount' => $request->amount,
                     'reviewed_by' => auth()->id(),
                     'reviewed_at' => now(),
                 ]
@@ -44,7 +39,7 @@ class FuelOrderFinanceController extends Controller
                 'action' => 'finance_approved',
                 'from_step' => $oldStep,
                 'to_step' => 'transport_assignment',
-                'notes' => 'تم تأكيد توفر المبلغ بمبلغ: ' . number_format((float) $request->amount, 2) . ' وتحويل الطلب للنقل',
+                'notes' => 'تم تأكيد توفر المبلغ وتحويل الطلب للنقل',
             ]);
         });
 
@@ -56,44 +51,48 @@ class FuelOrderFinanceController extends Controller
     public function rejectFinance(Request $request, $id)
     {
         $request->validate([
-            'reason' => ['required', 'string', 'max:1000'],
+            'reason' => ['required', 'string'],
         ]);
 
-        $order = FuelOrder::with('finance')->findOrFail($id);
-
+        $order = FuelOrder::with('items', 'finance')->findOrFail($id);
         if ($order->current_step !== 'finance_review') {
             return back()->with('error', 'الطلب ليس في مرحلة مراجعة توفر المبلغ');
         }
 
-        DB::transaction(function () use ($request, $order) {
-            $oldStep = $order->current_step;
+        // تحديث المالية
+        $order->finance()->updateOrCreate(
+            ['fuel_order_id' => $order->id],
+            [
+                'status' => 'rejected',
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+            ]
+        );
 
-            $order->finance()->updateOrCreate(
-                ['fuel_order_id' => $order->id],
-                [
-                    'status' => 'rejected',
-                    'reviewed_by' => auth()->id(),
-                    'reviewed_at' => now(),
-                ]
-            );
+        // 👇 أهم جزء (إعادة الطلب للتشغيل)
+        $order->update([
+            'current_step' => 'operations_review',
+            'status' => 'returned_from_finance',
+        ]);
 
-            $order->update([
-                'status' => 'returned_to_operations',
-                'current_step' => 'operations_review',
+        // 👇 إعادة كل العناصر إلى pending
+        foreach ($order->items as $item) {
+            $item->update([
+                'status' => 'pending',
+                'approved_quantity' => null,
             ]);
+        }
 
-            $order->logs()->create([
-                'user_id' => auth()->id(),
-                'action' => 'finance_rejected',
-                'from_step' => $oldStep,
-                'to_step' => 'operations_review',
-                'notes' => 'تم إرجاع الطلب للتشغيل. السبب: ' . $request->reason,
-            ]);
-        });
+        // 👇 تسجيل في اللوق
+        $order->logs()->create([
+            'action' => 'finance_rejected',
+            'from_step' => 'finance_review',
+            'to_step' => 'operations_review',
+            'notes' => $request->reason,
+            'user_id' => auth()->id(),
+        ]);
 
-        return redirect()
-            ->route('fuel-orders.show', $order->id)
-            ->with('success', 'تم إرجاع الطلب للتشغيل');
+        return back()->with('success', 'تم إرجاع الطلب للتشغيل لإعادة المراجعة');
     }
 
     public function confirmPayment(Request $request, $id)
@@ -106,7 +105,7 @@ class FuelOrderFinanceController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('fuel_order_finances', 'payment_reference')
-                    ->where(fn ($query) => $query->where('bank_name', $request->bank_name)),
+                    ->where(fn($query) => $query->where('bank_name', $request->bank_name)),
             ],
         ]);
 
@@ -124,6 +123,7 @@ class FuelOrderFinanceController extends Controller
                 [
                     'status' => 'paid',
                     'payment_reference' => $request->payment_reference,
+                    'bank_name' => $request->bank_name,
                     'paid_at' => now(),
                 ]
             );
@@ -146,4 +146,6 @@ class FuelOrderFinanceController extends Controller
             ->route('fuel-orders.show', $order->id)
             ->with('success', 'تم تسجيل الدفع وتحويل الطلب لمرحلة الاستلام');
     }
+
+    
 }
