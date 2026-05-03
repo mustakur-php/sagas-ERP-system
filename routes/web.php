@@ -15,8 +15,15 @@ use App\Http\Controllers\FuelOrderFinanceController;
 use App\Http\Controllers\FuelOrderTransportController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\CarrierController;
-
-
+use App\Http\Controllers\HR\HrDashboardController;
+use App\Http\Controllers\HR\HrEmployeeController;
+use App\Http\Controllers\HR\HrAttendanceController;
+use App\Http\Controllers\HR\HrOrganizationController;
+use App\Http\Controllers\HR\HrSettingController;
+use App\Http\Controllers\HR\HrWorkLocationController;
+use App\Http\Controllers\HR\HrPayrollRunController;
+use App\Http\Controllers\HR\HrContractController;
+use App\Http\Controllers\HR\HrEmployeeAdvanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -92,6 +99,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/maintenance-job-orders/{id}/status', [MaintenanceJobOrderController::class, 'updatestatus'])
         ->name('maintenance-job-orders.update-status');
 
+            // Maintenance Requests Workflow
+    Route::post('/maintenance-requests/{id}/assign-department', [MaintenanceRequestController::class, 'assignDepartment'])
+        ->name('maintenance-requests.assign-department');
+
+    Route::post('/maintenance-requests/{id}/assign-technician', [MaintenanceRequestController::class, 'assignTechnician'])
+        ->name('maintenance-requests.assign-technician');
+
+    Route::post('/maintenance-requests/{id}/mark-resolved', [MaintenanceRequestController::class, 'markResolved'])
+        ->name('maintenance-requests.mark-resolved');
+
+    Route::post('/maintenance-requests/{id}/approve-closure', [MaintenanceRequestController::class, 'approveClosure'])
+        ->name('maintenance-requests.approve-closure');
+
+    Route::post('/maintenance-requests/{id}/return-to-department', [MaintenanceRequestController::class, 'returnToDepartment'])
+        ->name('maintenance-requests.return-to-department');
+
     Route::post('/fuel-orders/{id}/transport/update', [FuelOrderTransportController::class, 'update'])
         ->name('fuel-orders.transport.update');
 
@@ -119,5 +142,51 @@ Route::middleware('auth')->group(function () {
     Route::resource('suppliers', SupplierController::class);
     Route::resource('carriers', CarrierController::class);
 
+    // أضف هذا السطر داخل routes/web.php
+    Route::get('/hr', [HrDashboardController::class, 'index'])->name('hr.index');
+
+
+    Route::prefix('hr')->name('hr.')->group(function () {
+
+        Route::get('/', [HrDashboardController::class, 'index'])->name('index');
+
+        Route::resource('employees', HrEmployeeController::class);
+        Route::resource('payroll', HrPayrollRunController::class);
+        Route::resource('contracts', HrContractController::class);
+        Route::resource('advances', HrEmployeeAdvanceController::class);
+
+        Route::get('attendance', [HrAttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('attendance/create', [HrAttendanceController::class, 'create'])->name('attendance.create');
+        Route::post('attendance', [HrAttendanceController::class, 'store'])->name('attendance.store');
+
+        Route::get('organization', [HrOrganizationController::class, 'index'])->name('organization.index');
+
+        Route::get('settings', [HrSettingController::class, 'index'])->name('settings.index');
+
+        Route::get('/organization', [HrOrganizationController::class, 'index'])->name('organization.index');
+        Route::post('/organization/departments', [HrOrganizationController::class, 'storeDepartment'])->name('organization.departments.store');
+        Route::post('/organization/positions', [HrOrganizationController::class, 'storePosition'])->name('organization.positions.store');
+        Route::get('/work-locations', [HrWorkLocationController::class, 'index'])
+            ->name('work-locations.index');
+
+        Route::post('/work-locations', [HrWorkLocationController::class, 'store'])
+            ->name('work-locations.store');
+
+        Route::delete('/work-locations/{work_location}', [HrWorkLocationController::class, 'destroy'])
+            ->name('work-locations.destroy');
+
+        Route::get('/attendance', [HrAttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('/attendance/check-in', [HrAttendanceController::class, 'checkIn'])->name('attendance.check-in');
+        Route::get('/attendance', [HrAttendanceController::class, 'index'])
+            ->name('attendance.index');
+
+        Route::post('/attendance/check-in', [HrAttendanceController::class, 'checkIn'])
+            ->name('attendance.check-in');
+
+        Route::post('/attendance/check-out', [HrAttendanceController::class, 'checkOut'])
+            ->name('attendance.check-out');
+    });
+
+    
 });
 

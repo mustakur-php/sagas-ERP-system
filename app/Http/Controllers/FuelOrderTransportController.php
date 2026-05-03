@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FuelOrder;
 use App\Models\FuelOrderTransport;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -22,7 +23,7 @@ class FuelOrderTransportController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $order = FuelOrder::with('transport')->findOrFail($fuelOrderId);
+        $order = FuelOrder::with(['transport', 'items'])->findOrFail($fuelOrderId);
 
         if ($order->current_step !== 'transport_assignment') {
             return back()->with('error', 'الطلب ليس في مرحلة النقل');
@@ -33,10 +34,34 @@ class FuelOrderTransportController extends Controller
         }
 
         DB::transaction(function () use ($request, $order) {
+            $supplier = Supplier::with('fuelPrices')->findOrFail($request->supplier_id);
+
+            $supplierPrices = $supplier->fuelPrices->keyBy('fuel_type_id');
+
+            $supplierTotalCost = 0;
+
+            foreach ($order->items as $item) {
+                if ($item->status !== 'approved') {
+                    continue;
+                }
+
+                $price = $supplierPrices[$item->fuel_type_id]->price_per_liter ?? 0;
+                $quantity = $item->approved_quantity ?? 0;
+
+                $supplierTotalCost += ((float) $price * (float) $quantity);
+            }
+
+            if ($supplierTotalCost <= 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'supplier_id' => 'لا توجد أسعار مسجلة لهذا المورد أو لا توجد كميات معتمدة.',
+                ]);
+            }
+
             FuelOrderTransport::create([
                 'fuel_order_id' => $order->id,
                 'supplier_id' => $request->supplier_id,
                 'carrier_id' => $request->carrier_id,
+                'supplier_total_cost' => $supplierTotalCost,    
                 'transport_cost' => $request->transport_cost,
                 'driver_name' => $request->driver_name,
                 'truck_number' => $request->truck_number,
@@ -80,12 +105,14 @@ class FuelOrderTransportController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $order = FuelOrder::with('transport')->findOrFail($fuelOrderId);
+        $order = FuelOrder::with(['transport', 'items'])->findOrFail($fuelOrderId);
 
         if (!$order->transport) {
             return back()->with('error', 'لا يوجد سجل نقل لهذا الطلب');
         }
 
+
+        
         $order->transport->update([
             'carrier_id' => $request->carrier_id,
             'transport_cost' => $request->transport_cost,
@@ -107,4 +134,5 @@ class FuelOrderTransportController extends Controller
 
         return back()->with('success', 'تم تحديث بيانات النقل بنجاح');
     }
+    
 }

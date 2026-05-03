@@ -112,7 +112,7 @@ class StationController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'company_id' => 'nullable|exists:companies,id',
+            'company_id' => 'required|exists:companies,id',
             'code' => 'required|unique:stations,code',
             'name' => 'required',
             'name_en' => 'nullable',

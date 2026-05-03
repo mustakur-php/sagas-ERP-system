@@ -11,14 +11,15 @@ class MaintenanceRequest extends Model
 
     protected $fillable = [
         'report_number',
-        'company_id',
         'station_id',
         'user_id',
         'department_id',
+        'assigned_to',
         'title',
         'description',
         'priority',
         'status',
+        'current_step',
         'reported_at',
         'closed_at',
         'notes',
@@ -38,6 +39,11 @@ class MaintenanceRequest extends Model
                 $model->reported_at = now();
             }
         });
+    }
+
+    public function assignedUser()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function station()

@@ -30,16 +30,6 @@ class FuelOrder extends Model
         'submitted_at',
         'completed_at',
         'cancelled_at',
-        'supplier_id',
-        'carrier_id',
-        'delivery_method',
-        'transport_cost',
-        'expected_delivery_date',
-        'transport_notes',
-        'payment_method',
-        'payment_reference',
-        'payment_amount',
-        'paid_at',
     ];
 
     protected $casts = [

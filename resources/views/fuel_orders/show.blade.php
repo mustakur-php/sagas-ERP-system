@@ -95,7 +95,6 @@
             'submitted' => 'secondary',
             'operations_review' => 'info',
             'finance_review' => 'warning text-dark',
-            'finance_availability_review' => 'warning text-dark',
             'transport_assignment' => 'primary',
             'finance_payment' => 'warning text-dark',
             'station_receipt' => 'primary',
@@ -167,7 +166,7 @@
                                 <td class="actions-cell text-center">
                                     @if($order->current_step === 'operations_review' && $item->status === 'pending')
                                     <div class="actions-wrapper">
-                                        <form method="POST" action="{{ route('fuel-orders.items.approve', $item->id) }}">
+                                        <form method="POST" action="{{ route('fuel-orders.items.approve', $item->id) }}"class="d-inline">
                                             @csrf
 
                                             <input type="number"
@@ -176,6 +175,7 @@
                                                 placeholder="الكمية"
                                                 step="0.01"
                                                 min="0"
+                                                required
                                                 value="{{ old('approved_quantity', $item->approved_quantity ?? $item->requested_quantity) }}">
 
                                             <button type="submit" class="btn btn-success btn-sm">
@@ -183,14 +183,15 @@
                                             </button>
                                         </form>
 
-                                        <form method="POST" action="{{ route('fuel-orders.items.reject', $item->id) }}">
+                                        <form method="POST" action="{{ route('fuel-orders.items.reject', $item->id) }}"class="d-inline">
                                             @csrf
 
                                             <input type="text"
-                                                name="reason"
+                                                name="rejection_reason"
                                                 class="form-control form-control-sm"
                                                 placeholder="سبب الرفض"
-                                                value="{{ old('reason') }}">
+                                                value="{{ old('rejection_reason') }}"
+                                                required>
 
                                             <button type="submit" class="btn btn-danger btn-sm">
                                                 رفض
@@ -215,11 +216,6 @@
             <div class="card-body">
                 <form method="POST" action="{{ route('fuel-orders.finance.approve', $order->id) }}" class="mb-3">
                     @csrf
-
-                    <div class="mb-2">
-                        <label>المبلغ المتوقع / المتاح</label>
-                        <input type="number" step="0.01" name="amount" class="form-control" required>
-                    </div>
 
                     <button type="submit" class="btn btn-success">
                         تأكيد توفر المبلغ
@@ -263,35 +259,32 @@
             <div class="card mb-4">
                 <div class="card-header">تعيين النقل</div>
                 <div class="card-body">
-                    <div class="mb-2">
+                    <div class="mb-3">
                         <label>المورد</label>
                         <select name="supplier_id" id="supplier_id" class="form-control" required>
                             <option value="">اختر المورد</option>
-
                             @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}">
-                                    {{ $supplier->name }}
-                                </option>
+                                <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <div id="supplier-cost-box" class="mt-3 d-none">
-                        <h6 class="mb-2">تكلفة الوقود حسب سعر المورد</h6>
+                    <div id="supplier-cost-box" class="mt-3" style="display:none;">
+                        <h6>تكلفة الوقود حسب سعر المورد</h6>
 
-                        <table class="table table-bordered table-sm">
+                        <table class="table table-bordered table-sm text-center">
                             <thead>
                                 <tr>
                                     <th>نوع الوقود</th>
-                                    <th>الكمية المطلوبة</th>
-                                    <th>سعر المورد</th>
-                                    <th>التكلفة</th>
+                                    <th>الكمية</th>
+                                    <th>سعر اللتر</th>
+                                    <th>الإجمالي</th>
                                 </tr>
                             </thead>
                             <tbody id="supplier-cost-body"></tbody>
                             <tfoot>
                                 <tr>
-                                    <th colspan="3">الإجمالي</th>
+                                    <th colspan="3">الإجمالي الكلي</th>
                                     <th id="supplier-total-cost">0.00</th>
                                 </tr>
                             </tfoot>
@@ -340,6 +333,7 @@
                 <div class="card-body">
                     <div class="mb-2">
                         <label>رقم الحوالة / مرجع الدفع</label>
+                        <input type="text" name="bank_name" class="form-control" required>
                         <input type="text" name="payment_reference" class="form-control" required>
                     </div>
 
@@ -397,14 +391,19 @@
     @endif
 
 </div>
-@endsection
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const supplierSelect = document.getElementById('supplier_id');
+    const box = document.getElementById('supplier-cost-box');
+    const body = document.getElementById('supplier-cost-body');
+    const totalCell = document.getElementById('supplier-total-cost');
+
     const supplierPrices = {!! json_encode(
         $suppliers->mapWithKeys(function ($supplier) {
             return [
-                $supplier->id => $supplier->fuelPrices->mapWithKeys(function ($price) {
+                (string) $supplier->id => $supplier->fuelPrices->mapWithKeys(function ($price) {
                     return [
-                        $price->fuel_type_id => $price->price_per_liter
+                        (string) $price->fuel_type_id => (float) $price->price_per_liter
                     ];
                 })->toArray()
             ];
@@ -414,32 +413,30 @@
     const orderItems = {!! json_encode(
         $order->items->map(function ($item) {
             return [
-                'fuel_type_id' => $item->fuel_type_id,
+                'fuel_type_id' => (string) $item->fuel_type_id,
                 'fuel_name' => $item->fuelType->name ?? 'وقود',
-                'quantity' => $item->approved_quantity ?? $item->requested_quantity,
+                'quantity' => (float) ($item->approved_quantity ?? $item->requested_quantity ?? 0),
             ];
         })->toArray()
     ) !!};
 
-    document.getElementById('supplier_id')?.addEventListener('change', function () {
+    if (!supplierSelect) return;
+
+    supplierSelect.addEventListener('change', function () {
         const supplierId = String(this.value);
-        const box = document.getElementById('supplier-cost-box');
-        const body = document.getElementById('supplier-cost-body');
-        const totalCell = document.getElementById('supplier-total-cost');
 
         body.innerHTML = '';
-        let total = 0;
+        totalCell.innerText = '0.00';
 
         if (!supplierId || !supplierPrices[supplierId]) {
-            box.classList.add('d-none');
-            totalCell.innerText = '0.00';
+            box.style.display = 'none';
             return;
         }
 
-        orderItems.forEach(item => {
-            const price = parseFloat(
-                supplierPrices[String(supplierId)]?.[String(item.fuel_type_id)] || 0
-            );
+        let total = 0;
+
+        orderItems.forEach(function (item) {
+            const price = parseFloat(supplierPrices[supplierId][String(item.fuel_type_id)] || 0);
             const quantity = parseFloat(item.quantity || 0);
             const cost = price * quantity;
 
@@ -456,6 +453,8 @@
         });
 
         totalCell.innerText = total.toFixed(2);
-        box.classList.remove('d-none');
+        box.style.display = 'block';
     });
+});
 </script>
+@endsection

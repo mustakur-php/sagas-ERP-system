@@ -5,7 +5,17 @@
 @section('page_subtitle', 'إدخال بيانات المحطة الأساسية')
 
 @section('content')
+@if(session('error'))
+    <div class="alert alert-danger">{{ session('error') }}</div>
+@endif
 
+@if($errors->any())
+    <div class="alert alert-danger">
+        @foreach($errors->all() as $error)
+            <div>{{ $error }}</div>
+        @endforeach
+    </div>
+@endif
 <div class="card form-card">
     <form action="{{ route('stations.store') }}" method="POST">
         @csrf
@@ -21,7 +31,7 @@
 
             <div class="form-group">
                 <label for="company_id">الشركة</label>
-                <select name="company_id" id="company_id" style="width:100%;">
+                <select name="company_id" id="company_id" style="width:100%;" required>
                     <option value="">اختر الشركة</option>
                     @foreach($companies as $company)
                         <option value="{{ $company->id }}" @selected(old('company_id') == $company->id)>
@@ -29,6 +39,9 @@
                         </option>
                     @endforeach
                 </select>
+                @error('company_id')
+                    <div class="error">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">

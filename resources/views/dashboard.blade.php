@@ -78,33 +78,38 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+
 const ctx = document.getElementById('salesChart').getContext('2d');
+
+const rawData = @json($chartData ?? []);
+
+const datasets = Array.isArray(rawData) ? rawData.map((item) => {
+    const fuelColors = {
+        '91': 'green',
+        '95': 'red',
+        'ديزل': 'orange',
+    };
+
+    const color = fuelColors[item.label] || 'gray';
+
+    return {
+        label: item.label,
+        data: item.data,
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 3
+    };
+}) : [];
 
 const chart = new Chart(ctx, {
     type: 'line',
     data: {
-        labels: @json($dates),
-        datasets: @json($chartData).map((item) => {
-            const fuelColors = {
-                '91': 'green',
-                '95': 'red',
-                'ديزل': 'orange',
-            };
-
-            const color = fuelColors[item.label] || 'gray';
-
-            return {
-                label: item.label,
-                data: item.data,
-                borderColor: color,
-                backgroundColor: color,
-                fill: false,
-                tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                borderWidth: 3
-            };
-        })
+        labels: @json($dates ?? []),
+        datasets: datasets
     },
     options: {
         responsive: true,
@@ -116,10 +121,7 @@ const chart = new Chart(ctx, {
         },
         scales: {
             y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 10000
-                }
+                beginAtZero: true
             }
         }
     }
@@ -128,31 +130,35 @@ const chart = new Chart(ctx, {
 <script>
 const stockCtx = document.getElementById('stockChart').getContext('2d');
 
+const rawStockData = @json($stockChartData ?? []);
+
+const stockDatasets = Array.isArray(rawStockData) ? rawStockData.map((item) => {
+    const fuelColors = {
+        '91': 'green',
+        '95': 'red',
+        'ديزل': 'orange',
+    };
+
+    const color = fuelColors[item.label] || 'gray';
+
+    return {
+        label: item.label,
+        data: item.data,
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 3
+    };
+}) : [];
+
 const stockChart = new Chart(stockCtx, {
     type: 'line',
     data: {
-        labels: @json($stockDates),
-        datasets: @json($stockChartData).map((item) => {
-            const fuelColors = {
-                '91': 'green',
-                '95': 'red',
-                'ديزل': 'orange',
-            };
-
-            const color = fuelColors[item.label] || 'gray';
-
-            return {
-                label: item.label,
-                data: item.data,
-                borderColor: color,
-                backgroundColor: color,
-                fill: false,
-                tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                borderWidth: 3
-            };
-        })
+        labels: @json($stockDates ?? []),
+        datasets: stockDatasets
     },
     options: {
         responsive: true,
@@ -164,10 +170,7 @@ const stockChart = new Chart(stockCtx, {
         },
         scales: {
             y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 10000
-                }
+                beginAtZero: true
             }
         }
     }

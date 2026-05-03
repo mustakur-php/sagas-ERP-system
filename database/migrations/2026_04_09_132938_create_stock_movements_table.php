@@ -16,12 +16,14 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->foreignId('station_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->nullable()
+                ->constrained('stations')
+                ->nullOnDelete();
 
             $table->foreignId('fuel_type_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->nullable()
+                ->constrained('fuel_types')
+                ->nullOnDelete();
 
             $table->string('movement_type'); 
             // opening_balance / purchase / sale / returned / adjustment
